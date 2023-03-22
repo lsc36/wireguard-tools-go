@@ -1,5 +1,9 @@
 package wgg
 
+import (
+	"math"
+)
+
 type errUsage string
 
 func (e errUsage) Error() string {
@@ -9,6 +13,7 @@ func (e errUsage) Error() string {
 const (
 	usage     = "wg <cmd> [args]"
 	usageShow = "wg show { <interface> | all | interfaces } [public-key | private-key | listen-port | fwmark | peers | preshared-keys | endpoints | allowed-ips | latest-handshakes | transfer | persistent-keepalive | dump]"
+	usageSet  = "wg set <interface> [listen-port <port>] [fwmark <mark>] [private-key <file path>] [peer <base64 public key> [remove] [preshared-key <file path>] [endpoint <ip>:<port>] [persistent-keepalive <interval seconds>] [allowed-ips <ip1>/<cidr1>[,<ip2>/<cidr2>]...] ]..."
 )
 
 type command struct {
@@ -38,6 +43,12 @@ var commandRoot = &command{
 					Usage: usageShow,
 				},
 			},
+		},
+		"set": {
+			Func:     cmdSet,
+			Usage:    usageSet,
+			MinNArgs: 2,
+			MaxNArgs: math.MaxInt,
 		},
 		"genkey": {
 			Func:  cmdGenKey,
