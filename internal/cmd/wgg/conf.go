@@ -1,7 +1,6 @@
 package wgg
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strconv"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/go-ini/ini"
 	"golang.zx2c4.com/wireguard/wgctrl"
-	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 func init() {
@@ -72,9 +70,4 @@ func cmdShowConf(args []string) error {
 		return fmt.Errorf("error writing config to stdout: %w", err)
 	}
 	return nil
-}
-
-func keyIsZero(key wgtypes.Key) bool {
-	var zeroKey [wgtypes.KeyLen]byte
-	return bytes.Equal(key[:], zeroKey[:])
 }
