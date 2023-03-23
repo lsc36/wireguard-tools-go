@@ -85,11 +85,11 @@ func Main(args []string) error {
 			continue
 		}
 
-		if len(args) < cmd.MinNArgs || len(args) > cmd.MaxNArgs {
-			return cmd.Usage
-		}
-
 		break
+	}
+
+	if len(args) < cmd.MinNArgs || len(args) > cmd.MaxNArgs {
+		return cmd.Usage
 	}
 
 	return cmd.Func(args)
