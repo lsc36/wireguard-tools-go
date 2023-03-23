@@ -44,6 +44,12 @@ var commandRoot = &command{
 				},
 			},
 		},
+		"showconf": {
+			Func:     cmdShowConf,
+			Usage:    "wg showconf <interface>",
+			MinNArgs: 1,
+			MaxNArgs: 1,
+		},
 		"set": {
 			Func:     cmdSet,
 			Usage:    usageSet,

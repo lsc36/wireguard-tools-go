@@ -5,6 +5,7 @@ go 1.20
 require golang.zx2c4.com/wireguard/wgctrl v0.0.0-20230215201556-9c5414ab4bde
 
 require (
+	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/mdlayher/genetlink v1.2.0 // indirect
