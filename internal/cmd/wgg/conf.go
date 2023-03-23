@@ -35,11 +35,11 @@ func cmdShowConf(args []string) error {
 	if d.ListenPort != 0 {
 		sec.NewKey("ListenPort", strconv.Itoa(d.ListenPort))
 	}
+	if d.FirewallMark != 0 {
+		sec.NewKey("FwMark", fmt.Sprintf("0x%x", d.FirewallMark))
+	}
 	if !keyIsZero(d.PrivateKey) {
 		sec.NewKey("PrivateKey", d.PrivateKey.String())
-	}
-	if d.FirewallMark != 0 {
-		sec.NewKey("FwMark", strconv.Itoa(d.FirewallMark))
 	}
 
 	for _, p := range d.Peers {
