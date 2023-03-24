@@ -107,7 +107,7 @@ func showDevice(d *wgtypes.Device) {
 
 		if !p.LastHandshakeTime.IsZero() {
 			// TODO match wg output format
-			ago := time.Now().Sub(p.LastHandshakeTime).Truncate(time.Second)
+			ago := time.Since(p.LastHandshakeTime).Truncate(time.Second)
 			s += fmt.Sprintf("  latest handshake: %s ago\n", ago)
 		}
 		if p.ReceiveBytes != 0 || p.TransmitBytes != 0 {
