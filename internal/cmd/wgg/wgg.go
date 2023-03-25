@@ -56,6 +56,18 @@ var commandRoot = &command{
 			MinNArgs: 2,
 			MaxNArgs: math.MaxInt,
 		},
+		"setconf": {
+			Func:     cmdSetConf,
+			Usage:    "wg setconf <interface> <configuration filename>",
+			MinNArgs: 2,
+			MaxNArgs: 2,
+		},
+		"addconf": {
+			Func:     cmdAddConf,
+			Usage:    "wg addconf <interface> <configuration filename>",
+			MinNArgs: 2,
+			MaxNArgs: 2,
+		},
 		"genkey": {
 			Func:  cmdGenKey,
 			Usage: "wg genkey",
