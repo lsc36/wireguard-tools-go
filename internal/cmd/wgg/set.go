@@ -2,8 +2,6 @@ package wgg
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -35,41 +33,13 @@ func cmdSet(args []string) error {
 func parseOneConfigValue(args []string, cp configParser) ([]string, error) {
 	errInvalid := fmt.Errorf("invalid argument: %s", args[0])
 
-	switch args[0] {
-	case "listen-port":
-		if len(args) < 2 {
-			return nil, errInvalid
-		}
-		if err := cp.ParseListenPort(args[1]); err != nil {
-			return nil, fmt.Errorf("error parsing listen-port: %w", err)
-		}
-		args = args[2:]
+	cpMap := map[string]func(string) error{
+		"fwmark":      cp.ParseFirewallMark,
+		"listen-port": cp.ParseListenPort,
+		"private-key": cp.ParsePrivateKeyFromFile,
+	}
 
-	case "fwmark":
-		if len(args) < 2 {
-			return nil, errInvalid
-		}
-		if err := cp.ParseFirewallMark(args[1]); err != nil {
-			return nil, fmt.Errorf("error parsing fwmark: %w", err)
-		}
-		args = args[2:]
-
-	case "private-key":
-		if len(args) < 2 {
-			return nil, errInvalid
-		}
-
-		data, err := os.ReadFile(args[1])
-		if err != nil {
-			return nil, fmt.Errorf("error reading private-key: %w", err)
-		}
-
-		if err := cp.ParsePrivateKey(strings.TrimSpace(string(data))); err != nil {
-			return nil, fmt.Errorf("error parsing private-key: %w", err)
-		}
-		args = args[2:]
-
-	case "peer":
+	if args[0] == "peer" {
 		if len(args) < 2 {
 			return nil, errInvalid
 		}
@@ -91,9 +61,15 @@ func parseOneConfigValue(args []string, cp configParser) ([]string, error) {
 		}
 
 		cp.Cfg.Peers = append(cp.Cfg.Peers, pc)
-
-	default:
-		return nil, errInvalid
+	} else {
+		parseFunc, ok := cpMap[args[0]]
+		if !ok || len(args) < 2 {
+			return nil, errInvalid
+		}
+		if err := parseFunc(args[1]); err != nil {
+			return nil, fmt.Errorf("error parsing %s: %w", args[0], err)
+		}
+		args = args[2:]
 	}
 
 	return args, nil
@@ -103,15 +79,16 @@ func parseOnePeerConfigValue(args []string, pcp peerConfigParser) ([]string, boo
 	done := false
 	errInvalid := fmt.Errorf("invalid argument: %s", args[0])
 
+	pcpMap := map[string]func(string) error{
+		"endpoint":             pcp.ParseEndpoint,
+		"persistent-keepalive": pcp.ParsePersistentKeepalive,
+		"preshared-key":        pcp.ParsePresharedKeyFromFile,
+	}
+
 	switch args[0] {
 	case "remove":
 		pcp.Cfg.Remove = true
 		args = args[1:]
-
-	// TODO implement the following
-	//case "preshared-key":
-	//case "endpoint":
-	//case "persistent-keepalive":
 
 	case "allowed-ips":
 		if len(args) < 2 {
@@ -130,7 +107,14 @@ func parseOnePeerConfigValue(args []string, pcp peerConfigParser) ([]string, boo
 		done = true
 
 	default:
-		return nil, false, errInvalid
+		parseFunc, ok := pcpMap[args[0]]
+		if !ok || len(args) < 2 {
+			return nil, false, errInvalid
+		}
+		if err := parseFunc(args[1]); err != nil {
+			return nil, false, fmt.Errorf("error parsing %s: %w", args[0], err)
+		}
+		args = args[2:]
 	}
 
 	return args, done, nil

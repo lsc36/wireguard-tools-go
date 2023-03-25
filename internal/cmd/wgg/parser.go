@@ -3,8 +3,11 @@ package wgg
 import (
 	"fmt"
 	"net"
+	"net/netip"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -14,17 +17,25 @@ type configParser struct {
 }
 
 func (cp configParser) ParsePrivateKey(s string) error {
-	// An empty string clears the key.
-	if s == "" {
-		cp.Cfg.PrivateKey = &wgtypes.Key{}
-		return nil
-	}
 	key, err := wgtypes.ParseKey(s)
 	if err != nil {
 		return err
 	}
 	cp.Cfg.PrivateKey = &key
 	return nil
+}
+
+func (cp configParser) ParsePrivateKeyFromFile(file string) error {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		// An empty file clears the key.
+		cp.Cfg.PrivateKey = &wgtypes.Key{}
+		return nil
+	}
+	return cp.ParsePrivateKey(strings.TrimSpace(string(data)))
 }
 
 func (cp configParser) ParseListenPort(s string) error {
@@ -85,5 +96,50 @@ func (pcp peerConfigParser) ParseAllowedIPs(s string) error {
 
 		pcp.Cfg.AllowedIPs = append(pcp.Cfg.AllowedIPs, *net)
 	}
+	return nil
+}
+
+func (pcp peerConfigParser) ParsePresharedKey(s string) error {
+	key, err := wgtypes.ParseKey(s)
+	if err != nil {
+		return err
+	}
+	pcp.Cfg.PresharedKey = &key
+	return nil
+}
+
+func (pcp peerConfigParser) ParsePresharedKeyFromFile(file string) error {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		// An empty file clears the key.
+		pcp.Cfg.PresharedKey = &wgtypes.Key{}
+		return nil
+	}
+	return pcp.ParsePresharedKey(strings.TrimSpace(string(data)))
+}
+
+func (pcp peerConfigParser) ParseEndpoint(s string) error {
+	addr, err := netip.ParseAddrPort(s)
+	if err != nil {
+		return err
+	}
+	pcp.Cfg.Endpoint = net.UDPAddrFromAddrPort(addr)
+	return nil
+}
+
+func (pcp peerConfigParser) ParsePersistentKeepalive(s string) error {
+	var pk time.Duration
+	// "off" is equivalent to 0
+	if s != "off" {
+		i, err := strconv.Atoi(s)
+		if err != nil {
+			return err
+		}
+		pk = time.Duration(i) * time.Second
+	}
+	pcp.Cfg.PersistentKeepaliveInterval = &pk
 	return nil
 }

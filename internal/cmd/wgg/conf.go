@@ -133,9 +133,9 @@ func parseINI(file string, cp configParser) error {
 	}
 
 	cpMap := map[string]func(string) error{
-		"PrivateKey": cp.ParsePrivateKey,
-		"ListenPort": cp.ParseListenPort,
 		"FwMark":     cp.ParseFirewallMark,
+		"ListenPort": cp.ParseListenPort,
+		"PrivateKey": cp.ParsePrivateKey,
 	}
 	for _, k := range secs[0].Keys() {
 		parseFunc, ok := cpMap[k.Name()]
@@ -159,12 +159,11 @@ func parseINI(file string, cp configParser) error {
 		pc := wgtypes.PeerConfig{}
 		pcp := peerConfigParser{Cfg: &pc}
 		pcpMap := map[string]func(string) error{
-			"PublicKey":  pcp.ParsePublicKey,
-			"AllowedIPs": pcp.ParseAllowedIPs,
-			// TODO implement the following
-			//"PresharedKey":
-			//"Endpoint":
-			//"PersistentKeepalive":
+			"AllowedIPs":          pcp.ParseAllowedIPs,
+			"Endpoint":            pcp.ParseEndpoint,
+			"PersistentKeepalive": pcp.ParsePersistentKeepalive,
+			"PresharedKey":        pcp.ParsePresharedKey,
+			"PublicKey":           pcp.ParsePublicKey,
 		}
 		for _, k := range sec.Keys() {
 			parseFunc, ok := pcpMap[k.Name()]
