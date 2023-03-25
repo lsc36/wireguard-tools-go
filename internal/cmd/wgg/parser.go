@@ -40,11 +40,11 @@ func (cp configParser) ParseFirewallMark(s string) error {
 	fwmark := 0
 	// "off" is equivalent to 0
 	if s != "off" {
-		var err error
-		fwmark, err = strconv.Atoi(s)
+		i64, err := strconv.ParseInt(s, 0, 0)
 		if err != nil {
 			return err
 		}
+		fwmark = int(i64)
 	}
 	cp.Cfg.FirewallMark = &fwmark
 	return nil
