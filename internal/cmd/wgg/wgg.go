@@ -68,6 +68,12 @@ var commandRoot = &command{
 			MinNArgs: 2,
 			MaxNArgs: 2,
 		},
+		"syncconf": {
+			Func:     cmdSyncConf,
+			Usage:    "wg syncconf <interface> <configuration filename>",
+			MinNArgs: 2,
+			MaxNArgs: 2,
+		},
 		"genkey": {
 			Func:  cmdGenKey,
 			Usage: "wg genkey",

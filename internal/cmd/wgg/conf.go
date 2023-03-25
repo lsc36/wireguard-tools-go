@@ -93,6 +93,52 @@ func cmdAddConf(args []string) error {
 	return setConf(args, wgtypes.Config{})
 }
 
+func cmdSyncConf(args []string) error {
+	name := args[0]
+	configFile := args[1]
+
+	cfg := wgtypes.Config{}
+	cp := configParser{Cfg: &cfg}
+	if err := parseINI(configFile, cp); err != nil {
+		return err
+	}
+
+	c, err := wgctrl.New()
+	if err != nil {
+		return fmt.Errorf("error creating client: %w", err)
+	}
+	defer c.Close()
+
+	dev, err := c.Device(name)
+	if err != nil {
+		return fmt.Errorf("error getting device %s: %w", name, err)
+	}
+
+	// Remove peers that are present on the device but not in loaded config.
+	// Original algorithm:
+	// https://git.zx2c4.com/wireguard-tools/tree/src/setconf.c?id=b4f6b4f229d291daf7c35c6f1e7f4841cc6d69bc#n30
+	peers := make(map[wgtypes.Key]bool)
+	for _, p := range dev.Peers {
+		peers[p.PublicKey] = false
+	}
+	for _, p := range cfg.Peers {
+		peers[p.PublicKey] = true
+	}
+	for key, fromCfg := range peers {
+		if !fromCfg {
+			cfg.Peers = append(cfg.Peers, wgtypes.PeerConfig{
+				PublicKey: key,
+				Remove:    true,
+			})
+		}
+	}
+
+	if err := c.ConfigureDevice(name, cfg); err != nil {
+		return fmt.Errorf("error configuring device %s: %w", name, err)
+	}
+	return nil
+}
+
 func setConf(args []string, cfg wgtypes.Config) error {
 	name := args[0]
 	configFile := args[1]
