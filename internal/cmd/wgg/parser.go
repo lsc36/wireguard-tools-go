@@ -72,6 +72,11 @@ func (pcp peerConfigParser) ParsePublicKey(s string) error {
 }
 
 func (pcp peerConfigParser) ParseAllowedIPs(s string) error {
+	pcp.Cfg.ReplaceAllowedIPs = true
+	if s == "" {
+		return nil
+	}
+
 	for _, ipmask := range strings.Split(s, ",") {
 		ipmask = strings.TrimSpace(ipmask)
 

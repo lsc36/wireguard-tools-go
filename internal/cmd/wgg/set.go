@@ -80,6 +80,7 @@ func parseOnePeerConfigValue(args []string, pcp peerConfigParser) ([]string, boo
 	errInvalid := fmt.Errorf("invalid argument: %s", args[0])
 
 	pcpMap := map[string]func(string) error{
+		"allowed-ips":          pcp.ParseAllowedIPs,
 		"endpoint":             pcp.ParseEndpoint,
 		"persistent-keepalive": pcp.ParsePersistentKeepalive,
 		"preshared-key":        pcp.ParsePresharedKeyFromFile,
@@ -89,19 +90,6 @@ func parseOnePeerConfigValue(args []string, pcp peerConfigParser) ([]string, boo
 	case "remove":
 		pcp.Cfg.Remove = true
 		args = args[1:]
-
-	case "allowed-ips":
-		if len(args) < 2 {
-			return nil, false, errInvalid
-		}
-
-		pcp.Cfg.ReplaceAllowedIPs = true
-		if args[1] != "" {
-			if err := pcp.ParseAllowedIPs(args[1]); err != nil {
-				return nil, false, fmt.Errorf("error parsing allowed-ips: %w", err)
-			}
-		}
-		args = args[2:]
 
 	case "peer":
 		done = true
