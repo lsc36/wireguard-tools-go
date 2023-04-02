@@ -16,17 +16,25 @@ func cmdShowAll(args []string) error {
 	}
 	defer c.Close()
 
-	// TODO implement show specific attribute
 	ds, err := c.Devices()
 	if err != nil {
 		return fmt.Errorf("error getting devices: %w", err)
+	}
+
+	if len(args) == 1 {
+		for _, d := range ds {
+			if err := printAttr(d, args[0], true); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 
 	for i, d := range ds {
 		if i != 0 {
 			fmt.Println("")
 		}
-		showDevice(d)
+		prettyPrint(d)
 	}
 	return nil
 }
@@ -60,7 +68,6 @@ func cmdShowOne(args []string) error {
 	}
 	defer c.Close()
 
-	// TODO implement show specific field
 	name := args[0]
 
 	d, err := c.Device(name)
@@ -68,11 +75,15 @@ func cmdShowOne(args []string) error {
 		return fmt.Errorf("error getting device %s: %w", name, err)
 	}
 
-	showDevice(d)
+	if len(args) == 2 {
+		return printAttr(d, args[1], false)
+	}
+
+	prettyPrint(d)
 	return nil
 }
 
-func showDevice(d *wgtypes.Device) {
+func prettyPrint(d *wgtypes.Device) {
 	s := fmt.Sprintf("interface: %s\n", d.Name)
 	if !keyIsZero(d.PrivateKey) {
 		s += fmt.Sprintf("  public key: %s\n", d.PublicKey)
@@ -124,4 +135,87 @@ func showDevice(d *wgtypes.Device) {
 
 		fmt.Print(s)
 	}
+}
+
+func printAttr(d *wgtypes.Device, attr string, withIface bool) error {
+	prefix := ""
+	if withIface {
+		prefix = d.Name + "\t"
+	}
+
+	switch attr {
+	case "public-key":
+		fmt.Printf("%s%s\n", prefix, maybeKey(d.PublicKey))
+	case "private-key":
+		fmt.Printf("%s%s\n", prefix, maybeKey(d.PrivateKey))
+	case "listen-port":
+		fmt.Printf("%s%d\n", prefix, d.ListenPort)
+	case "fwmark":
+		if d.FirewallMark == 0 {
+			fmt.Printf("%soff\n", prefix)
+		} else {
+			fmt.Printf("%s0x%x\n", prefix, d.FirewallMark)
+		}
+	case "peers":
+		for _, p := range d.Peers {
+			fmt.Printf("%s%s\n", prefix, p.PublicKey)
+		}
+	case "preshared-keys":
+		for _, p := range d.Peers {
+			fmt.Printf("%s%s\t%s\n", prefix, p.PublicKey, maybeKey(p.PresharedKey))
+		}
+	case "endpoints":
+		for _, p := range d.Peers {
+			if p.Endpoint == nil {
+				fmt.Printf("%s%s\t(none)\n", prefix, p.PublicKey)
+			} else {
+				fmt.Printf("%s%s\t%s\n", prefix, p.PublicKey, p.Endpoint)
+			}
+		}
+	case "allowed-ips":
+		for _, p := range d.Peers {
+			fmt.Printf("%s%s\t", prefix, p.PublicKey)
+			if len(p.AllowedIPs) == 0 {
+				fmt.Println("(none)")
+				continue
+			}
+			ips := make([]any, 0, len(p.AllowedIPs))
+			for _, ip := range p.AllowedIPs {
+				ips = append(ips, ip.String())
+			}
+			fmt.Println(ips...)
+		}
+	case "latest-handshakes":
+		for _, p := range d.Peers {
+			if p.LastHandshakeTime.IsZero() {
+				fmt.Printf("%s%s\t0\n", prefix, p.PublicKey)
+			} else {
+				fmt.Printf("%s%s\t%d\n", prefix, p.PublicKey, p.LastHandshakeTime.Unix())
+			}
+		}
+	case "persistent-keepalive":
+		for _, p := range d.Peers {
+			if p.PersistentKeepaliveInterval == 0 {
+				fmt.Printf("%s%s\toff\n", prefix, p.PublicKey)
+			} else {
+				fmt.Printf("%s%s\t%.0f\n", prefix, p.PublicKey, p.PersistentKeepaliveInterval.Seconds())
+			}
+		}
+	case "transfer":
+		for _, p := range d.Peers {
+			fmt.Printf("%s%s\t%d\t%d\n", prefix, p.PublicKey, p.ReceiveBytes, p.TransmitBytes)
+		}
+	// TODO implement
+	//case "dump":
+	default:
+		return fmt.Errorf("invalid parameter: %s", attr)
+	}
+	return nil
+}
+
+func maybeKey(key wgtypes.Key) string {
+	if keyIsZero(key) {
+		return "(none)"
+	}
+	return key.String()
 }
